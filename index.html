@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<!-- INFO 3300 P2 -->
+<!-- Created by Amanda Chen, Paul Tarpey, and Priyanka Rathnam -->
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>INFO 3300 Project 2</title>
+    <script src="//d3js.org/d3.v4.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.24.0/d3-legend.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Open+Sans:400,600">
+    <link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+
+<body>
+    <div id="title">
+        <h1>Shark Tank Deals</h1>
+    </div>
+    <div id="main">
+        <h2 id="entrepreneur">The Entrepreneur</h2>
+        <p>Build an entrepreneur profile by hovering below:</p>
+        <div id="chart">
+            <div id="explanation" style="visibility: hidden;">
+                <span id="percentage"></span>
+                <br/>entrepreneurs with this profile made deals
+            </div>
+
+        </div>
+        <div id="sequence"></div>
+    </div>
+    <div id="deal">
+        <h2>The Deal</h2>
+        <p>Average deal statistics for entrepreneurs with this profile:</p>
+        <span id="amount">Amount</span>
+        <span id="equity">Equity</span>
+        <span id="valuation">Valuation</span>
+        <br>
+        <br>
+        <svg id="dealLegend" width="100" height="100">
+        </svg>
+    </div>
+    <div id="sharks">
+        <h2>The Shark</h2>
+        <p>Who made the most deals with these entrepreneurs?</p>
+        <div id="sharkImages"></div>
+        <div id="sharkNames"></div>
+    </div>
+    <div id="svgs">
+        <svg id="svg7" width="108" height="100">
+            <text x="20" y="15" font-size="12px" padding:>Gender</text>
+        </svg>
+        <svg id="svg8" width="120" height="100">
+            <text x="20" y="15" font-size="12px">Industry</text>
+        </svg>
+        <svg id="svg8a" width="120" height="100">
+        </svg>
+        <svg id="svg9" width="100" height="100">
+            <text x="20" y="15" font-size="12px">Ask Amount</text>
+        </svg>
+        <svg id="svg10" width="89" height="100">
+            <text x="20" y="15" font-size="12px">Ask Equity</text>
+        </svg>
+        <svg id="svg11" width="100" height="100">
+            <text x="20" y="15" font-size="12px">Ask Valuation </text>
+        </svg>
+    </div>
+
+    <!-- Code for Sequence Sunburst modified from Kerry Rodden's Block found at https://bl.ocks.org/kerryrodden/766f8f6d31f645c39f488a0befa1e3c8 -->
+
+    <script>
+        // Dimensions of sunburst.
+        var width = 1000;
+        var height = 450;
+        var radius = Math.min(width, height) / 2;
+        var padding = 20;
+        var svgWidth = 75;
+        var svgHeight = 150;
+
+        svg2 = d3.select("#deal").append("svg")
+            .attr("width", svgWidth + padding)
+            .attr("height", svgHeight + padding);
+        svg1 = d3.select("#deal").append("svg")
+            .attr("width", svgWidth + padding)
+            .attr("height", svgHeight + padding);
+        svg4 = d3.select("#deal").append("svg")
+            .attr("width", svgWidth + padding)
+            .attr("height", svgHeight + padding);
+        svg3 = d3.select("#deal").append("svg")
+            .attr("width", svgWidth + padding)
+            .attr("height", svgHeight + padding);
+        svg6 = d3.select("#deal").append("svg")
+            .attr("width", svgWidth + padding)
+            .attr("height", svgHeight + padding);
+        svg5 = d3.select("#deal").append("svg")
+            .attr("width", svgWidth + padding)
+            .attr("height", svgHeight + padding);
+        // Breadcrumb dimensions: width, height, spacing, width of tip/tail.
+        var b = {
+            w: 120,
+            h: 30,
+            s: 3,
+            t: 10
+        };
+
+        // Mappings
+        var colors = {
+            "Gender": "#E74C3C",
+            "Industry": "#2E86C1",
+            "Ask Amount": "#7D3C98",
+            "Ask Equity": "#229954",
+            "Ask Valuation": "#F1C40F",
+        };
+        var stepMap = ["Gender", "Industry", "AskAmount", "AskEquity", "AskValuation"];
+        var gender = ["Male", "Female", "Mixed Team"];
+        var industry = ["Automotive", "Business Services", "Children / Education", "Fashion / Beauty", "Fitness / Sports / Outdoors", "Food and Beverage", "Green/CleanTech", "Healthcare", "Lifestyle / Home", "Media / Entertainment", "Pet Products", "Software / Tech", "Travel", "Uncertain / Other"];
+        var amount = ["$0-$250k", "$250k-$500k", "$500k-$750k", "$750k-$1M", ">$1M"];
+        var equity = ["0%-25%", "25%-50%", "50%-100%", ">100%"]
+        var valuation = ["<$1M", "$1M-$10M", "$10M-20M", ">$20M"];
+        var genderColors = {
+            "Male": "#E74C3C",
+            "Female": "#C0392B",
+            "Mixed Team": "#EC7063"
+        };
+        var industryColors = {
+            "Automotive": "#d6eaf8",
+            "Business Services": "#c2def3",
+            "Children / Education": "#aed2ed",
+            "Fashion / Beauty": "#9bc6e7",
+            "Fitness / Sports / Outdoors": "#89b9df",
+            "Food and Beverage": "#79add7",
+            "Green/CleanTech": "#69a1cd",
+            "Healthcare": "#5995c3",
+            "Lifestyle / Home": "#4b89b7",
+            "Media / Entertainment": "#3e7dac",
+            "Pet Products": "#32729e",
+            "Software / Tech": "#286590",
+            "Travel": "#205b82",
+            "Uncertain / Other": "#1b4f72"
+        };
+        var amountColors = {
+            "$0-$250k": "#BB8FCE",
+            "$250k-$500k": "#A569BD",
+            "$500k-$750k": "#7D3C98",
+            "$750k-$1M": "#5B2C6F",
+            ">$1M": "#4A235A",
+
+        };
+        var equityColors = {
+            "0%-25%": "#82E0AA",
+            "25%-50%": "#2ECC71",
+            "50%-100%": "#229954",
+            ">100%": "#196F3D"
+        };
+        var valuationColors = {
+            "<$1M": "#F7DC6F",
+            "$1M-$10M": "#F1C40F",
+            "$10M-20M": "#D4AC0D",
+            ">$20M": "#B7950B"
+        };
+        var nameChanges = {
+            "Automotive": "Automotive",
+            "Business Services": "Business",
+            "Children / Education": "Children",
+            "Fashion / Beauty": "Fashion",
+            "Fitness / Sports / Outdoors": "Fitness",
+            "Food and Beverage": "Food",
+            "Green/CleanTech": "Green Tech",
+            "Healthcare": "Healthcare",
+            "Lifestyle / Home": "Lifestyle",
+            "Media / Entertainment": "Entertainment",
+            "Pet Products": "Pet Products",
+            "Software / Tech": "Technology",
+            "Travel": "Travel",
+            "Uncertain / Other": "Other"
+        }
+
+        // Images photoshopped and taken from: 
+        // http://i.huffpost.com/gen/772062/images/o-SHARK-TANK-facebook.jpg
+        // http://static3.businessinsider.com/image/5441318e6da811421d4563f1-1143-857/kevin-harrington.jpg
+        var sharkImages = {
+            "shark1": "images/shark1.png",
+            "shark2": "images/shark2.png",
+            "shark3": "images/shark3.png",
+            "shark4": "images/shark4.png",
+            "shark5": "images/shark5.png",
+            "shark6": "images/shark6.png",
+            "shark7": "images/shark7.png"
+        }
+        var sharkNames = {
+            "shark1": " Barbara Corcoran ",
+            "shark2": "    Mark Cuban    ",
+            "shark3": "      Lori Greiner     ",
+            "shark4": " Kevin Harrington ",
+            "shark5": "   Robert Herjavec ",
+            "shark6": "   Daymond John   ",
+            "shark7": "   Kevin O'Leary  "
+        }
+
+
+        // Total size of all segments; we set this later, after loading the data.
+        var totalSize = 0;
+
+        var vis = d3.select("#chart").append("svg:svg")
+            .attr("width", 700)
+            .attr("height", 800)
+            .append("svg:g")
+            .attr("id", "container")
+            .attr("transform", "translate(350, 310)");
+
+        var partition = d3.partition()
+            .size([2 * Math.PI, radius * radius]);
+
+        var arc = d3.arc()
+            .startAngle(function (d) {
+                return d.x0;
+            })
+            .endAngle(function (d) {
+                return d.x1;
+            })
+            .innerRadius(function (d) {
+                return Math.sqrt(d.y0);
+            })
+            .outerRadius(function (d) {
+                return Math.sqrt(d.y1);
+            });
+
+        // Use d3.text and d3.csvParseRows so that we do not need to have a header
+        // row, and can receive the csv as an array of arrays.
+        d3.text("sequences_new.csv", function (text) {
+            var csv = d3.csvParseRows(text);
+            var json = buildHierarchy(csv);
+            Object.keys(sharkImages).forEach(function (shark) {
+                document.getElementById('sharkImages').innerHTML += '<img src="' + sharkImages[shark] + '" width="100", height="100", style="opacity:0.2" />';
+                var name = sharkNames[shark].replace(/ /g, "&nbsp;");
+                document.getElementById('sharkNames').innerHTML += '<span>' + name + '</span>';
+            });
+
+            svg1.append("text")
+                .attr("x", (svgWidth + 2 * padding) / 2 - 10)
+                .attr("y", padding - 2)
+                .style("text-anchor", "middle")
+                .style("dominant-baseline", "bottom")
+                .text("$0");
+            svg1.append("rect")
+                .attr("x", 0 + padding)
+                .attr("height", svgHeight)
+                .attr("y", padding)
+                .attr("width", svgWidth)
+                .style("fill", "#6C3483")
+            svg2.append("text")
+                .attr("x", (svgWidth + 2 * padding) / 2)
+                .attr("y", padding - 2)
+                .style("text-anchor", "middle")
+                .style("dominant-baseline", "bottom")
+                .text("$0");
+            svg2.append("rect")
+                .attr("x", 0 + padding)
+                .attr("height", svgHeight)
+                .attr("y", padding)
+                .attr("width", svgWidth)
+                .style("fill", "#2471A3")
+            svg3.append("text")
+                .attr("x", (svgWidth + 2 * padding) / 2 - 10)
+                .attr("y", padding - 2)
+                .style("text-anchor", "middle")
+                .style("dominant-baseline", "bottom")
+                .text("$0");
+            svg3.append("rect")
+                .attr("x", 0 + padding - 10)
+                .attr("height", svgHeight)
+                .attr("y", padding)
+                .attr("width", svgWidth)
+                .style("fill", "#6C3483")
+            svg4.append("text")
+                .attr("x", (svgWidth + 2 * padding) / 2)
+                .attr("y", padding - 2)
+                .style("text-anchor", "middle")
+                .style("dominant-baseline", "bottom")
+                .text("$0");
+            svg4.append("rect")
+                .attr("x", 0 + padding)
+                .attr("height", svgHeight)
+                .attr("y", padding)
+                .attr("width", svgWidth)
+                .style("fill", "#2471A3")
+            svg5.append("text")
+                .attr("x", (svgWidth + 2 * padding) / 2 - 10)
+                .attr("y", padding - 2)
+                .style("text-anchor", "middle")
+                .style("dominant-baseline", "bottom")
+                .text("$0");
+            svg5.append("rect")
+                .attr("x", 0 + padding - 10)
+                .attr("height", svgHeight)
+                .attr("y", padding)
+                .attr("width", svgWidth)
+                .style("fill", "#6C3483")
+            svg6.append("text")
+                .attr("x", (svgWidth + 2 * padding) / 2)
+                .attr("y", padding - 2)
+                .style("text-anchor", "middle")
+                .style("dominant-baseline", "bottom")
+                .text("$0");
+            svg6.append("rect")
+                .attr("x", 0 + padding)
+                .attr("height", svgHeight)
+                .attr("y", padding)
+                .attr("width", svgWidth)
+                .style("fill", "#2471A3")
+
+            createVisualization(json);
+        });
+
+
+        // Main function to draw and set up the visualization, once we have the data.
+        function createVisualization(json) {
+
+            // Basic setup of page elements.
+            initializeBreadcrumbTrail();
+
+            // Bounding circle underneath the sunburst, to make it easier to detect
+            // when the mouse leaves the parent g.
+            vis.append("svg:circle")
+                .attr("r", radius)
+                .style("opacity", 0);
+
+            // Turn the data into a d3 hierarchy and calculate the sums.
+            var root = d3.hierarchy(json)
+                .sum(function (d) {
+                    return d.size;
+                })
+                .sort(function (a, b) {
+                    return b.value - a.value;
+                });
+
+
+            // For efficiency, filter nodes to keep only those large enough to see.
+            var nodes = partition(root).descendants()
+                .filter(function (d) {
+                    return (d.x1 - d.x0 > 0.0001); // 0.005 radians = 0.29 degrees
+                });
+
+            var path = vis.data([json]).selectAll("path")
+                .data(nodes)
+                .enter().append("svg:path")
+                .attr("display", function (d) {
+                    return d.depth ? null : "none";
+                })
+                .attr("d", arc)
+                .attr("fill-rule", "evenodd")
+                //add fill based on color mappings by category
+                .style("fill", function (d) {
+                    if (gender.indexOf(d.data.name) > -1) {
+                        return genderColors[d.data.name];
+                    }
+                    if (industry.indexOf(d.data.name) > -1) {
+                        return industryColors[d.data.name];
+                    }
+                    if (amount.indexOf(d.data.name) > -1) {
+                        return amountColors[d.data.name];
+                    }
+                    if (equity.indexOf(d.data.name) > -1) {
+                        return equityColors[d.data.name];
+                    }
+                    if (valuation.indexOf(d.data.name) > -1) {
+                        return valuationColors[d.data.name];
+                    }
+                })
+                .style("opacity", 1)
+                .on("mouseover", mouseover);
+
+            // Add the mouseleave handler to the bounding circle.
+            d3.select("#container").on("mouseleave", mouseleave);
+
+            // Get total size of the tree = value of root node from partition.
+            totalSize = path.datum().value;
+        };
+
+        // Fade all but the current sequence, and show it in the breadcrumb trail.
+        function mouseover(d) {
+            console.log(d);
+            d.sum(function (node) {
+                return node.size;
+            });
+            var dVal = d.value;
+            //find the percent of total
+            var percentage = (100 * dVal / totalSize).toPrecision(3);
+            var percentageString = percentage + "%";
+            if (percentage < 0.1) {
+                percentageString = "< 0.1%";
+            }
+            //find the percent of deals made
+            d.sum(function (node) {
+                return node.deals;
+            });
+            var dDeals = d.value;
+            // var dealPercentage = (100 * dDeals / dVal).toPrecision(3);
+            // var dealPercentageString = dealPercentage + "%";
+            var dealPercentageString = dDeals + " of " + dVal;
+            d3.select("#percentage")
+                .text(dealPercentageString);
+            //find the average deal amount
+            d.sum(function (node) {
+                return node.amount;
+            });
+            var dAmount = (d.value / dDeals).toFixed(0);
+            if (isNaN(dAmount)) {
+                dAmount = 0.00;
+            }
+
+            //code for adding commas to number taken from http://stackoverflow.com/questions/2901102/how-to-print-a-number-with-commas-as-thousands-separators-in-javascript
+            var dAmountString = "$" + dAmount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            d3.select("#dealAmount")
+                .text(dAmountString);
+            //find the average deal equity
+            d.sum(function (node) {
+                return node.equity;
+            });
+            var dEquity = (100 * d.value / dDeals).toPrecision(3);
+            if (isNaN(dEquity)) {
+                dEquity = 0.0;
+            }
+            var dEquityString = dEquity + "%"
+            d3.select("#dealEquity")
+                .text(dEquityString);
+            //find the average deal valuation
+            d.sum(function (node) {
+                return node.valuation;
+            });
+            var dValuation = (d.value / dDeals).toFixed(0);
+            if (isNaN(dValuation)) {
+                dValuation = 0.00;
+            }
+            //code for adding commas to number taken from http://stackoverflow.com/questions/2901102/how-to-print-a-number-with-commas-as-thousands-separators-in-javascript
+            var dValuationString = "$" + dValuation.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            d3.select("#dealValuation")
+                .text(dValuationString);
+
+            /////////// Start Ask data ///////////////////////////////////////////////////
+
+            //find the average ask amount
+            d.sum(function (node) {
+                return node.askAmount;
+            });
+            var dAskAmount = (d.value / dDeals).toFixed(0);
+            if (isNaN(dAskAmount)) {
+                dAskAmount = 0.00;
+            }
+
+            //code for adding commas to number taken from http://stackoverflow.com/questions/2901102/how-to-print-a-number-with-commas-as-thousands-separators-in-javascript
+            var dAskAmountString = "$" + dAskAmount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+            //find the average ask equity
+            d.sum(function (node) {
+                return node.askEquity;
+            });
+            var dAskEquity = (100 * d.value / dDeals).toPrecision(3);
+            if (isNaN(dAskEquity)) {
+                dAskEquity = 0.0;
+            }
+            var dAskEquityString = dAskEquity + "%"
+
+            //find the average ask valuation
+            d.sum(function (node) {
+                return node.askValuation;
+            });
+            var dAskValuation = (d.value / dDeals).toFixed(0);
+            if (isNaN(dAskValuation)) {
+                dAskValuation = 0.00;
+            }
+            //code for adding commas to number taken from http://stackoverflow.com/questions/2901102/how-to-print-a-number-with-commas-as-thousands-separators-in-javascript
+            var dAskValuationString = "$" + dAskValuation.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+            var amountRatio = dAmount / dAskAmount;
+            var equityRatio = dEquity / dAskEquity;
+            var valuationRatio = dValuation / dAskValuation;
+            if (isNaN(amountRatio)) {
+                amountRatio = 1.00;
+            }
+            if (isNaN(equityRatio)) {
+                equityRatio = 1.00;
+            }
+            if (isNaN(valuationRatio)) {
+                valuationRatio = 1.00;
+            }
+            console.log(amountRatio);
+            console.log(equityRatio);
+            console.log(valuationRatio);
+
+            svg1.selectAll("*").remove();
+            svg2.selectAll("*").remove();
+            svg3.selectAll("*").remove();
+            svg4.selectAll("*").remove();
+            svg5.selectAll("*").remove();
+            svg6.selectAll("*").remove();
+
+
+            if (amountRatio > 1) {
+                amountRatio = dAskAmount / dAmount;
+                svg2.append("text")
+                    .attr("x", (svgWidth + 2 * padding) / 2)
+                    .attr("y", svgHeight + padding)
+                    .transition()
+                    .duration(400)
+                    .ease(d3.easeLinear)
+                    .attr("y", svgHeight + padding - svgHeight * amountRatio - 2)
+                    .style("text-anchor", "middle")
+                    .style("dominant-baseline", "bottom")
+                    .text(dAskAmountString);
+                svg2.append("rect")
+                    .attr("x", 0 + padding)
+                    .attr("width", svgWidth)
+                    .attr("y", svgHeight + padding)
+                    .attr("height", 0)
+                    .style("fill", "#2471A3")
+                    .transition()
+                    .duration(400)
+                    .ease(d3.easeLinear)
+                    .attr("height", svgHeight * amountRatio)
+                    .attr("y", svgHeight + padding - svgHeight * amountRatio);
+                svg1.append("text")
+                    .attr("x", (svgWidth + 2 * padding) / 2 - 10)
+                    .attr("y", svgHeight + padding)
+                    .transition()
+                    .duration(400)
+                    .ease(d3.easeLinear)
+                    .attr("y", padding - 2)
+                    .style("text-anchor", "middle")
+                    .style("dominant-baseline", "bottom")
+                    .text(dAmountString);
+                svg1.append("rect")
+                    .attr("x", 0 + padding - 10)
+                    .attr("y", svgHeight + padding)
+                    .attr("height", 0)
+                    .attr("width", svgWidth)
+                    .style("fill", "#6C3483")
+                    .transition()
+                    .duration(400)
+                    .ease(d3.easeLinear)
+                    .attr("height", svgHeight)
+                    .attr("y", padding);
+            } else {
+                svg1.append("text")
+                    .attr("x", (svgWidth + 2 * padding) / 2 - 10)
+                    .attr("y", svgHeight + padding)
+                    .transition()
+                    .duration(400)
+                    .ease(d3.easeLinear)
+                    .attr("y", svgHeight + padding - svgHeight * amountRatio - 2)
+                    .style("text-anchor", "middle")
+                    .style("dominant-baseline", "bottom")
+                    .text(dAmountString);
+                svg1.append("rect")
+                    .attr("x", 0 + padding - 10)
+                    .attr("width", svgWidth)
+                    .attr("y", svgHeight + padding)
+                    .attr("height", 0)
+                    .style("fill", "#6C3483")
+                    .transition()
+                    .duration(400)
+                    .ease(d3.easeLinear)
+                    .attr("height", svgHeight * amountRatio)
+                    .attr("y", svgHeight + padding - svgHeight * amountRatio);
+                svg2.append("text")
+                    .attr("x", (svgWidth + 2 * padding) / 2)
+                    .attr("y", svgHeight + padding)
+                    .transition()
+                    .duration(400)
+                    .ease(d3.easeLinear)
+                    .attr("y", padding - 2)
+                    .style("text-anchor", "middle")
+                    .style("dominant-baseline", "bottom")
+                    .text(dAskAmountString);
+                svg2.append("rect")
+                    .attr("x", 0 + padding)
+                    .attr("y", svgHeight + padding)
+                    .attr("height", 0)
+                    .attr("width", svgWidth)
+                    .style("fill", "#2471A3")
+                    .transition()
+                    .duration(400)
+                    .ease(d3.easeLinear)
+                    .attr("height", svgHeight)
+                    .attr("y", padding);
+            }
+            if (equityRatio > 1) {
+                equityRatio = dAskEquity / dEquity;
+                svg4.append("text")
+                    .attr("x", (svgWidth + 2 * padding) / 2)
+                    .attr("y", svgHeight + padding)
+                    .transition()
+                    .duration(400)
+                    .ease(d3.easeLinear)
+                    .attr("y", svgHeight + padding - svgHeight * equityRatio - 2)
+                    .style("text-anchor", "middle")
+                    .style("dominant-baseline", "bottom")
+                    .text(dAskEquityString);
+                svg4.append("rect")
+                    .attr("x", 0 + padding)
+                    .attr("y", svgHeight + padding)
+                    .attr("height", 0)
+                    .attr("width", svgWidth)
+                    .style("fill", "#2471A3")
+                    .transition()
+                    .duration(400)
+                    .ease(d3.easeLinear)
+                    .attr("height", svgHeight * equityRatio)
+                    .attr("y", svgHeight + padding - svgHeight * equityRatio);
+                svg3.append("text")
+                    .attr("x", (svgWidth + 2 * padding) / 2 - 10)
+                    .attr("y", svgHeight + padding)
+                    .transition()
+                    .duration(400)
+                    .ease(d3.easeLinear)
+                    .attr("y", padding - 2)
+                    .style("text-anchor", "middle")
+                    .style("dominant-baseline", "bottom")
+                    .text(dEquityString);
+                svg3.append("rect")
+                    .attr("x", 0 + padding - 10)
+                    .attr("y", svgHeight + padding)
+                    .attr("height", 0)
+                    .attr("width", svgWidth)
+                    .style("fill", "#6C3483")
+                    .transition()
+                    .duration(400)
+                    .ease(d3.easeLinear)
+                    .attr("height", svgHeight)
+                    .attr("y", padding);
+            } else {
+                svg3.append("text")
+                    .attr("x", (svgWidth + 2 * padding) / 2 - 10)
+                    .attr("y", svgHeight + padding)
+                    .transition()
+                    .duration(400)
+                    .ease(d3.easeLinear)
+                    .attr("y", svgHeight + padding - svgHeight * equityRatio - 2)
+                    .style("text-anchor", "middle")
+                    .style("dominant-baseline", "bottom")
+                    .text(dEquityString);
+                svg3.append("rect")
+                    .attr("x", 0 + padding - 10)
+                    .attr("y", svgHeight + padding)
+                    .attr("height", 0)
+                    .attr("width", svgWidth)
+                    .style("fill", "#6C3483")
+                    .transition()
+                    .duration(400)
+                    .ease(d3.easeLinear)
+                    .attr("height", svgHeight * equityRatio)
+                    .attr("y", svgHeight + padding - svgHeight * equityRatio);
+                svg4.append("text")
+                    .attr("x", (svgWidth + 2 * padding) / 2)
+                    .attr("y", svgHeight + padding)
+                    .transition()
+                    .duration(400)
+                    .ease(d3.easeLinear)
+                    .attr("y", padding - 2)
+                    .style("text-anchor", "middle")
+                    .style("dominant-baseline", "bottom")
+                    .text(dAskEquityString);
+                svg4.append("rect")
+                    .attr("x", 0 + padding)
+                    .attr("y", svgHeight + padding)
+                    .attr("height", 0)
+                    .attr("width", svgWidth)
+                    .style("fill", "#2471A3")
+                    .transition()
+                    .duration(400)
+                    .ease(d3.easeLinear)
+                    .attr("height", svgHeight)
+                    .attr("y", padding);
+            }
+            if (valuationRatio > 1) {
+                valuationRatio = dAskValuation / dValuation;
+                svg6.append("text")
+                    .attr("x", (svgWidth + 2 * padding) / 2)
+                    .attr("y", svgHeight + padding)
+                    .transition()
+                    .duration(400)
+                    .ease(d3.easeLinear)
+                    .attr("y", svgHeight + padding - svgHeight * valuationRatio - 2)
+                    .style("text-anchor", "middle")
+                    .style("dominant-baseline", "bottom")
+                    .text(dAskValuationString);
+                svg6.append("rect")
+                    .attr("x", 0 + padding)
+                    .attr("y", svgHeight + padding)
+                    .attr("height", 0)
+                    .attr("width", svgWidth)
+                    .style("fill", "#2471A3")
+                    .transition()
+                    .duration(400)
+                    .ease(d3.easeLinear)
+                    .attr("height", svgHeight * valuationRatio)
+                    .attr("y", svgHeight + padding - svgHeight * valuationRatio);
+                svg5.append("text")
+                    .attr("x", (svgWidth + 2 * padding) / 2 - 10)
+                    .attr("y", svgHeight + padding)
+                    .transition()
+                    .duration(400)
+                    .ease(d3.easeLinear)
+                    .attr("y", padding - 2)
+                    .style("text-anchor", "middle")
+                    .style("dominant-baseline", "bottom")
+                    .text(dValuationString);
+                svg5.append("rect")
+                    .attr("x", 0 + padding - 10)
+                    .attr("y", svgHeight + padding)
+                    .attr("height", 0)
+                    .attr("width", svgWidth)
+                    .style("fill", "#6C3483")
+                    .transition()
+                    .duration(400)
+                    .ease(d3.easeLinear)
+                    .attr("height", svgHeight)
+                    .attr("y", padding);
+            } else {
+                svg5.append("text")
+                    .attr("x", (svgWidth + 2 * padding) / 2 - 10)
+                    .attr("y", svgHeight + padding)
+                    .transition()
+                    .duration(400)
+                    .ease(d3.easeLinear)
+                    .attr("y", svgHeight + padding - svgHeight * valuationRatio - 2)
+                    .style("text-anchor", "middle")
+                    .style("dominant-baseline", "bottom")
+                    .text(dValuationString);
+                svg5.append("rect")
+                    .attr("x", 0 + padding - 10)
+                    .attr("width", svgWidth)
+                    .attr("y", svgHeight + padding)
+                    .attr("height", 0)
+                    .style("fill", "#6C3483")
+                    .transition()
+                    .duration(400)
+                    .ease(d3.easeLinear)
+                    .attr("height", svgHeight * valuationRatio)
+                    .attr("y", svgHeight + padding - svgHeight * valuationRatio);
+                svg6.append("text")
+                    .attr("x", (svgWidth + 2 * padding) / 2)
+                    .attr("y", svgHeight + padding)
+                    .transition()
+                    .duration(400)
+                    .ease(d3.easeLinear)
+                    .attr("y", padding - 2)
+                    .style("text-anchor", "middle")
+                    .style("dominant-baseline", "bottom")
+                    .text(dAskValuationString);
+                svg6.append("rect")
+                    .attr("x", 0 + padding)
+                    .attr("width", svgWidth)
+                    .attr("y", svgHeight + padding)
+                    .attr("height", 0)
+                    .style("fill", "#2471A3")
+                    .transition()
+                    .duration(400)
+                    .ease(d3.easeLinear)
+                    .attr("height", svgHeight)
+                    .attr("y", padding);
+            }
+
+
+
+
+            /////////// End Ask Data //////////////////////////////////////////////////
+
+
+            //find the number of deals made by each shark
+            d.sum(function (node) {
+                return node.shark1;
+            })
+            var dShark1 = d.value;
+            d.sum(function (node) {
+                return node.shark2;
+            })
+            var dShark2 = d.value;
+            d.sum(function (node) {
+                return node.shark3
+            })
+            var dShark3 = d.value;
+            d.sum(function (node) {
+                return node.shark4;
+            })
+            var dShark4 = d.value;
+            d.sum(function (node) {
+                return node.shark5;
+            })
+            var dShark5 = d.value;
+            d.sum(function (node) {
+                return node.shark6;
+            })
+            var dShark6 = d.value;
+            d.sum(function (node) {
+                return node.shark7;
+            })
+            var dShark7 = d.value;
+            d.sum(function (node) {
+                return node.size;
+            });
+
+            sharkMap = {
+                    "shark1": dShark1,
+                    "shark2": dShark2,
+                    "shark3": dShark3,
+                    "shark4": dShark4,
+                    "shark5": dShark5,
+                    "shark6": dShark6,
+                    "shark7": dShark7
+                }
+                //find the sharks who made the most deals
+            var sharkArr = [];
+            var max = 0;
+            Object.keys(sharkMap).forEach(function (key) {
+                if (sharkMap[key] > max && sharkMap[key] != 0) {
+                    max = sharkMap[key];
+                    sharkArr = [];
+                    sharkArr.push(key);
+                } else if (sharkMap[key] == max && sharkMap[key] != 0) {
+                    sharkArr.push(key);
+                }
+            });
+
+            //add images and names of sharks who made the most deals
+            document.getElementById('sharkImages').innerHTML = "";
+            document.getElementById('sharkNames').innerHTML = "";
+            Object.keys(sharkMap).forEach(function (shark) {
+                if (sharkArr.includes(shark)) {
+                    document.getElementById('sharkImages').innerHTML += '<img src="' + sharkImages[shark] + '" width="100", height="100" />';
+                    var name = sharkNames[shark].replace(/ /g, "&nbsp;");
+                    document.getElementById('sharkNames').innerHTML += '<span>' + name + '</span>';
+                } else {
+                    document.getElementById('sharkImages').innerHTML += '<img src="' + sharkImages[shark] + '" width="100", height="100", style="opacity:0.2" />';
+                    var name = sharkNames[shark].replace(/ /g, "&nbsp;");
+                    document.getElementById('sharkNames').innerHTML += '<span>' + name + '</span>';
+                }
+
+            });
+
+            d3.select("#explanation")
+                .style("visibility", "");
+
+
+            var sequenceArray = d.ancestors().reverse();
+            sequenceArray.shift(); // remove root node from the array
+            updateBreadcrumbs(sequenceArray, percentageString);
+
+            // Fade all the segments.
+            d3.selectAll("path")
+                .style("opacity", 0.3);
+
+            // Then highlight only those that are an ancestor of the current segment.
+            vis.selectAll("path")
+                .filter(function (node) {
+                    return (sequenceArray.indexOf(node) >= 0);
+                })
+                .style("opacity", 1);
+        }
+
+        // Restore everything to full opacity when moving off the visualization.
+        function mouseleave(d) {
+
+            // Hide the breadcrumb trail
+            d3.select("#trail")
+                .style("visibility", "hidden");
+
+            // Deactivate all segments during transition.
+            d3.selectAll("path").on("mouseover", null);
+
+            // Transition each segment to full opacity and then reactivate it.
+            d3.selectAll("path")
+                .transition()
+                .duration(1000)
+                .style("opacity", 1)
+                .on("end", function () {
+                    d3.select(this).on("mouseover", mouseover);
+                });
+
+            document.getElementById('sharkImages').innerHTML = "";
+            document.getElementById('sharkNames').innerHTML = "";
+            Object.keys(sharkImages).forEach(function (shark) {
+                document.getElementById('sharkImages').innerHTML += '<img src="' + sharkImages[shark] + '" width="100", height="100", style="opacity:0.2" />';
+                var name = sharkNames[shark].replace(/ /g, "&nbsp;");
+                document.getElementById('sharkNames').innerHTML += '<span>' + name + '</span>';
+            });
+
+            svg1.selectAll("*").remove();
+            svg2.selectAll("*").remove();
+            svg3.selectAll("*").remove();
+            svg4.selectAll("*").remove();
+            svg5.selectAll("*").remove();
+            svg6.selectAll("*").remove();
+
+            svg1.append("text")
+                .attr("x", (svgWidth + 2 * padding) / 2 - 10)
+                .attr("y", padding - 2)
+                .style("text-anchor", "middle")
+                .style("dominant-baseline", "bottom")
+                .text("$0");
+            svg1.append("rect")
+                .attr("x", 0 + padding - 10)
+                .attr("height", svgHeight)
+                .attr("y", padding)
+                .attr("width", svgWidth)
+                .style("fill", "#6C3483")
+            svg2.append("text")
+                .attr("x", (svgWidth + 2 * padding) / 2)
+                .attr("y", padding - 2)
+                .style("text-anchor", "middle")
+                .style("dominant-baseline", "bottom")
+                .text("$0");
+            svg2.append("rect")
+                .attr("x", 0 + padding)
+                .attr("height", svgHeight)
+                .attr("y", padding)
+                .attr("width", svgWidth)
+                .style("fill", "#2471A3")
+            svg3.append("text")
+                .attr("x", (svgWidth + 2 * padding) / 2 - 10)
+                .attr("y", padding - 2)
+                .style("text-anchor", "middle")
+                .style("dominant-baseline", "bottom")
+                .text("$0");
+            svg3.append("rect")
+                .attr("x", 0 + padding - 10)
+                .attr("height", svgHeight)
+                .attr("y", padding)
+                .attr("width", svgWidth)
+                .style("fill", "#6C3483")
+            svg4.append("text")
+                .attr("x", (svgWidth + 2 * padding) / 2)
+                .attr("y", padding - 2)
+                .style("text-anchor", "middle")
+                .style("dominant-baseline", "bottom")
+                .text("$0");
+            svg4.append("rect")
+                .attr("x", 0 + padding)
+                .attr("height", svgHeight)
+                .attr("y", padding)
+                .attr("width", svgWidth)
+                .style("fill", "#2471A3")
+            svg5.append("text")
+                .attr("x", (svgWidth + 2 * padding) / 2 - 10)
+                .attr("y", padding - 2)
+                .style("text-anchor", "middle")
+                .style("dominant-baseline", "bottom")
+                .text("$0");
+            svg5.append("rect")
+                .attr("x", 0 + padding - 10)
+                .attr("height", svgHeight)
+                .attr("y", padding)
+                .attr("width", svgWidth)
+                .style("fill", "#6C3483")
+            svg6.append("text")
+                .attr("x", (svgWidth + 2 * padding) / 2)
+                .attr("y", padding - 2)
+                .style("text-anchor", "middle")
+                .style("dominant-baseline", "bottom")
+                .text("$0");
+            svg6.append("rect")
+                .attr("x", 0 + padding)
+                .attr("height", svgHeight)
+                .attr("y", padding)
+                .attr("width", svgWidth)
+                .style("fill", "#2471A3")
+        }
+
+        function initializeBreadcrumbTrail() {
+            // Add the svg area.
+            var trail = d3.select("#sequence").append("svg:svg")
+                .attr("width", 1300)
+                .attr("height", 50)
+                .attr("id", "trail");
+            // Add the label at the end, for the percentage.
+            trail.append("svg:text")
+                .attr("id", "endlabel")
+                .style("fill", "#000");
+        }
+
+        // Generate a string that describes the points of a breadcrumb polygon.
+        function breadcrumbPoints(d, i) {
+            var points = [];
+            points.push("0,0");
+            points.push(b.w + ",0");
+            points.push(b.w + b.t + "," + (b.h / 2));
+            points.push(b.w + "," + b.h);
+            points.push("0," + b.h);
+            if (i > 0) { // Leftmost breadcrumb; don't include 6th vertex.
+                points.push(b.t + "," + (b.h / 2));
+            }
+            return points.join(" ");
+        }
+
+        // Update the breadcrumb trail to show the current sequence and percentage.
+        function updateBreadcrumbs(nodeArray, percentageString) {
+
+            // Data join; key function combines name and depth (= position in sequence).
+            var trail = d3.select("#trail")
+                .selectAll("g")
+                .data(nodeArray, function (d) {
+                    return d.data.name + d.depth;
+                });
+
+            // Remove exiting nodes.
+            trail.exit().remove();
+
+            // Add breadcrumb and label for entering nodes.
+            var entering = trail.enter().append("svg:g")
+
+            entering.append("svg:polygon")
+                .attr("points", breadcrumbPoints)
+                //add fill based on color mappings
+                .style("fill", function (d) {
+                    if (gender.indexOf(d.data.name) > -1) {
+                        return genderColors[d.data.name];
+                    }
+                    if (industry.indexOf(d.data.name) > -1) {
+                        return industryColors[d.data.name];
+                    }
+                    if (amount.indexOf(d.data.name) > -1) {
+                        return amountColors[d.data.name];
+                    }
+                    if (equity.indexOf(d.data.name) > -1) {
+                        return equityColors[d.data.name];
+                    }
+                    if (valuation.indexOf(d.data.name) > -1) {
+                        return valuationColors[d.data.name];
+                    }
+                });
+
+            entering.append("svg:text")
+                .attr("x", (b.w + b.t) / 2)
+                .attr("y", b.h / 2)
+                .attr("dy", "0.35em")
+                .attr("text-anchor", "middle")
+                .text(function (d) {
+                    //change industry names to make them shorter
+                    if (industry.indexOf(d.data.name) > -1) {
+                        return nameChanges[d.data.name];
+                    }
+                    return d.data.name;
+                });
+
+            // Merge enter and update selections; set position for all nodes.
+            entering.merge(trail).attr("transform", function (d, i) {
+                return "translate(" + i * (b.w + b.s) + ", 0)";
+            });
+
+            d3.select("#trail")
+                .style("visibility", "");
+        }
+
+        // Scale legend adapted from http://d3-legend.susielu.com/ 
+
+        /* Gender legend */
+        var ordinal = d3.scaleOrdinal()
+            .domain(["Mixed Team", "Male", "Female"])
+            .range(["#EC7063", "#E74C3C", "#C0392B"]);
+
+        var svg7 = d3.select("#svg7");
+
+        svg7.append("g")
+            .style("font-size", "11px")
+            .attr("class", "legendLinear")
+            .attr("transform", "translate(20,20)");
+
+        var legendLinear = d3.legendColor()
+            .shapeWidth(15)
+            .cells(3)
+            .orient('vertical')
+            .scale(ordinal);
+
+        /* Industry legend */
+
+        var ordinal2 = d3.scaleOrdinal()
+            .domain(["Automotive", "Business", "Children", "Fashion", "Fitness", "Food", "Green Tech"])
+            .range(['#d6eaf8', '#c2def3', '#aed2ed', '#9bc6e7', '#89b9df', '#79add7', '#69a1cd']);
+
+        var svg8 = d3.select("#svg8");
+
+        svg8.append("g")
+            .style("font-size", "11px")
+            .attr("class", "legendLinear")
+            .attr("transform", "translate(20,20)");
+
+        var legendLinear2 = d3.legendColor()
+            .shapeWidth(15)
+            .cells(7)
+            .orient('vertical')
+            .scale(ordinal2);
+
+        // Industry legend part 2
+
+        var ordinal2a = d3.scaleOrdinal()
+            .domain(["Healthcare", "Lifestyle", "Entertainment", "Pet Products", "Technology", "Travel", "Other"])
+            .range(['#5995c3', '#4b89b7', '#3e7dac', '#32729e', '#286590', '#205b82', '#1b4f72']);
+
+        var svg8a = d3.select("#svg8a");
+
+        svg8a.append("g")
+            .style("font-size", "11px")
+            .attr("class", "legendLinear")
+            .attr("transform", "translate(20,20)");
+
+        var legendLinear2a = d3.legendColor()
+            .shapeWidth(15)
+            .cells(7)
+            .orient('vertical')
+            .scale(ordinal2a);
+
+        /* Amount legend */
+
+        var ordinal3 = d3.scaleOrdinal()
+            .domain(["$0-250k", "$250-500k", "$500-750k", "$750-$1M", ">$1M"])
+            .range(["#BB8FCE", "#A569BD", "#7D3C98", "#5B2C6F", "#4A235A"]);
+
+        var svg9 = d3.select("#svg9");
+
+        svg9.append("g")
+            .style("font-size", "11px")
+            .attr("class", "legendLinear")
+            .attr("transform", "translate(20,20)");
+
+        var legendLinear3 = d3.legendColor()
+            .shapeWidth(15)
+            .cells(5)
+            .orient('vertical')
+            .scale(ordinal3);
+
+        /* Equity legend */
+
+        var ordinal4 = d3.scaleOrdinal()
+            .domain(["0-25%", "25-50%", "50-100%"])
+            .range(["#2ECC71", "#229954", "#196F3D", ]);
+
+        var svg10 = d3.select("#svg10");
+
+        svg10.append("g")
+            .style("font-size", "11px")
+            .attr("class", "legendLinear")
+            .attr("transform", "translate(20,20)");
+
+        var legendLinear4 = d3.legendColor()
+            .shapeWidth(15)
+            .cells(4)
+            .orient('vertical')
+            .scale(ordinal4);
+
+        /* Valuation legend */
+
+        var ordinal5 = d3.scaleOrdinal()
+            .domain(["<$1M", "$1-10M", "$10-20M", ">$20M"])
+            .range(["#F7DC6F", "#F1C40F", "#D4AC0D", "#B7950B"]);
+
+        var svg11 = d3.select("#svg11");
+
+        svg11.append("g")
+            .style("font-size", "11px")
+            .attr("class", "legendLinear")
+            .attr("transform", "translate(20,20)");
+
+        var legendLinear5 = d3.legendColor()
+            .shapeWidth(15)
+            .cells(4)
+            .orient('vertical')
+            .scale(ordinal5);
+
+        /* Deal legend */
+
+        var ordinald = d3.scaleOrdinal()
+            .domain(["Ask", "Deal"])
+            .range(["#2471A3", "#6C3483"]);
+
+        var dealLegend = d3.select("#dealLegend");
+
+        dealLegend.append("g")
+            .style("font-size", "11px")
+            .attr("class", "legendLinear")
+            .attr("transform", "translate(20,20)");
+
+        var legendOrdinal = d3.legendColor()
+            .shapeWidth(15)
+            .cells(2)
+            .orient('vertical')
+            .scale(ordinald);
+
+        // Legend calls
+        svg7.select(".legendLinear")
+            .call(legendLinear)
+
+        svg8.select(".legendLinear")
+            .call(legendLinear2);
+
+        svg8a.select(".legendLinear")
+            .call(legendLinear2a);
+
+        svg9.select(".legendLinear")
+            .call(legendLinear3);
+
+        svg10.select(".legendLinear")
+            .call(legendLinear4);
+
+        svg11.select(".legendLinear")
+            .call(legendLinear5);
+
+        dealLegend.select(".legendLinear")
+            .call(legendOrdinal);
+
+        // Take a 2-column CSV and transform it into a hierarchical structure suitable
+        // for a partition layout. The first column is a sequence of step names, from
+        // root to leaf, separated by "~"
+
+        function buildHierarchy(csv) {
+            var root = {
+                "name": "root",
+                "children": []
+            };
+            for (var i = 0; i < csv.length; i++) {
+                //used python script to make sequence csv
+                //track the following values for each node
+                var sequence = csv[i][0];
+                var size = +csv[i][1];
+                var deals = +csv[i][2];
+                var amount = +csv[i][3];
+                var equity = +csv[i][4];
+                var valuation = +csv[i][5];
+                var shark1 = +csv[i][6];
+                var shark2 = +csv[i][7];
+                var shark3 = +csv[i][8];
+                var shark4 = +csv[i][9];
+                var shark5 = +csv[i][10];
+                var shark6 = +csv[i][11];
+                var shark7 = +csv[i][12];
+                var askAmount = +csv[i][13];
+                var askEquity = +csv[i][14];
+                var askValuation = +csv[i][15];
+                if (isNaN(size)) { // e.g. if this is a header row
+                    continue;
+                }
+                var parts = sequence.split("~");
+                var currentNode = root;
+                for (var j = 0; j < parts.length; j++) {
+                    var children = currentNode["children"];
+                    var nodeName = parts[j];
+                    var childNode;
+                    if (j + 1 < parts.length) {
+                        // Not yet at the end of the sequence; move down the tree.
+                        var foundChild = false;
+                        for (var k = 0; k < children.length; k++) {
+                            if (children[k]["name"] == nodeName) {
+                                childNode = children[k];
+                                foundChild = true;
+                                break;
+                            }
+                        }
+                        // If we don't already have a child node for this branch, create it.
+                        if (!foundChild) {
+                            childNode = {
+                                "name": nodeName,
+                                "children": []
+                            };
+                            children.push(childNode);
+                        }
+                        currentNode = childNode;
+                    } else {
+                        // Reached the end of the sequence; create a leaf node.
+                        childNode = {
+                            "name": nodeName,
+                            "size": size,
+                            "deals": deals,
+                            "amount": amount,
+                            "equity": equity,
+                            "valuation": valuation,
+                            "shark1": shark1,
+                            "shark2": shark2,
+                            "shark3": shark3,
+                            "shark4": shark4,
+                            "shark5": shark5,
+                            "shark6": shark6,
+                            "shark7": shark7,
+                            "askAmount": askAmount,
+                            "askEquity": askEquity,
+                            "askValuation": askValuation
+                        };
+                        children.push(childNode);
+                    }
+                }
+            }
+            return root;
+        };
+    </script>
+
+</body>
+
+</html>

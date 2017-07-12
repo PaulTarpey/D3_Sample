@@ -1,0 +1,107 @@
+body {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    background-color: #fff;
+    width: 680px;
+}
+
+h1 {
+    margin-top: 0px;
+    font-size: 36px;
+}
+
+p {
+    margin-top: -15px;
+    font-size: 15px;
+}
+
+#entrepreneur {
+    margin-top: -15px;
+}
+
+#amount {
+    margin-left: 50px;
+    font-weight: 600;
+}
+
+#equity {
+    padding-left: 145px;
+    font-weight: 600;
+}
+
+#valuation {
+    padding-left: 140px;
+    font-weight: 600;
+}
+
+#main {
+    float: left;
+    width: 700px;
+}
+
+#deal {
+    margin-top: 0px;
+    margin-left: 680px;
+    width: 750px;
+}
+
+#dealLegend {
+    float: right;
+    margin-right: 50px;
+    margin-top: 70px;
+}
+
+#sharks {
+    margin-top: 60px;
+    margin-left: 680px;
+    width: 750px;
+}
+
+#sharkNames {
+    font-size: 12px;
+}
+
+#sequence {
+    width: 750px;
+    height: 30px;
+    position: relative;
+}
+
+#sequence text {
+    font-weight: 600;
+    fill: #fff;
+}
+
+#svgs svg {
+    font-size: 10px;
+    height: 150px;
+    margin-top: 60px;
+}
+
+#chart {
+    position: absolute;
+    float: left;
+    margin-left: -50px;
+    width: 750px;
+    margin-top: -30px;
+}
+
+#chart path {
+    stroke: #fff;
+}
+
+#explanation {
+    position: absolute;
+    top: 265px;
+    left: 285px;
+    width: 140px;
+    text-align: center;
+    color: #666;
+    z-index: -1;
+    font-size: 14px;
+}
+
+#percentage {
+    font-size: 2em;
+}
